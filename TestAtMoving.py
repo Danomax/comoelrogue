@@ -21,28 +21,34 @@ def direction(pos_ini,pos_end):
   if dx>=0 and dx>= abs(dy):
     direc=(1,0)
   elif dy>=0 and dy>=abs(dx):
-    direc=(0,1)
+    direc=(0,-1)
   elif dx<0 and abs(dx)>=abs(dy):
     direc=(-1,0)
   elif dy<0 and abs(dy)>=abs(dx):
-    direc=(0,-1)
+    direc=(0,1)
   return direc
 
 class Character(Image):
   def __init__(self,**kwargs):
     super(Character, self).__init__(**kwargs)
     self.char = ''
-    self.mycolor = None
+    self.color = []
     self.block = 0 
 
   def setChar(self,char,color,block):
     self.char = char
     ordn = ord(self.char)
-    self.mycolor = color
+    self.color = color
     #if ordn < 32 or (ordn > 126 and ordn < 161):
     self.source = 'atlas://roguelike16x16_gs_ro/x' + str(ordn)
     #else:
     #  self.source = 'atlas://roguelike16x16_gs_ro/' + chr(ordn)
+    self.block = block
+
+  def setColor(self,color):
+    self.color = color
+
+  def setBlock(self,block):
     self.block = block
 
 class Hero(Character):
@@ -58,10 +64,7 @@ class Hero(Character):
 
 class Map():
   def __init__(self):
-    self.chrmap = []
-    self.blockmap = []
-    self.colormap = []
-    self.Character=[]
+    self.Char=[]
     self.cols = 0
     self.rows = 0
 
@@ -73,33 +76,28 @@ class Map():
       seq = f.readlines()
       seq = [s.strip() for s in seq]
       row=0
-      for s in seq:
-        self.chrmap.append([])
-        for ch in s:
-          self.chrmap[row].append(ch)
-        row+=1
-      for s in seq:
-        self.colormap.append([])
-        cl = lista de s en ','
-        for col in cl:
-          color = 
-          self.chrmap[row].append(ch)
-        row+=1
-      for s in seq:
-        self.blockmap.append([])
-        for ch in s:
-          self.chrmap[row].append(ch)
-        row+=1
- 
+      for row in range(self.rows):
+        self.Char.append([])
+        for col in range(self.cols):
+          self.Char[row].append(Character())
+          char = seq[row][col]
+          cl = seq[row+self.rows].split(',') #lista de linea en ','
+          color = [float(ci) for ci in cl[4*col:(4*(col+1))]] 
+          block = seq[row+2*self.rows][col]
+          self.Char[row][-1].setChar(char,color,block)
+
   def make_map_dictionary(self,rows,cols):
     ordn = 0
     for row in range(rows):
-      self.chrmap.append([])
+      self.Char.append([])
       for col in range(cols):
+        self.Char[row].append(Character())
+        mycolor = [random(),random(),random(),1]
         if ordn < 32 or ordn > 126:
-          self.chrmap[row].append(' ')
+          self.Char[row][-1].setChar(char=' ',block=0)
         else:
-          self.chrmap[row].append(chr(ordn))
+          self.Char[row].append(Character())
+          self.Char[row][-1].setChar(char=chr(ordn),color=mycolor,block=1)
         ordn += 1
     self.cols = cols
     self.rows = rows
@@ -108,18 +106,18 @@ class Map():
     seq=str(self.rows)+','+str(self.cols)+'\n'
     for row in range(self.rows):
       for col in range(self.cols):
-        seq += self.chrmap[row][col]
+        seq += self.Char[row][col].char
       seq+='\n'
     for row in range(self.rows):
       for col in range(self.cols):
-        seq += str(self.colormap[row][col][0]) + ','
-        seq += str(self.colormap[row][col][1]) + ','
-        seq += str(self.colormap[row][col][2]) + ','
-        seq += str(self.colormap[row][col][3]) + ','
+        seq += str(self.Char[row][col].color[0]) + ','
+        seq += str(self.Char[row][col].color[1]) + ','
+        seq += str(self.Char[row][col].color[2]) + ','
+        seq += str(self.Char[row][col].color[3]) + ','
       seq+='\n'
     for row in range(self.rows):
       for col in range(self.cols):
-        seq += str(self.blockmap[row][col])
+        seq += str(self.Char[row][col].block)
       seq+='\n'
 
     with open(filename,'w') as f:
@@ -134,27 +132,23 @@ class MyWidget(Widget):
     self.tilewidth = 16
     self.tileheight = 16
     self.scrmap = Map()
-    self.scrmap.load_from_file('town.map')
+    self.scrmap.load_from_file('town2.map')
     self.rows,self.cols = self.scrmap.rows,self.scrmap.cols
     if DEBUG: print(str(self.rows)+','+str(self.cols))
     self.scrmap_width = self.cols*self.tilewidth
     self.scrmap_height = self.rows*self.tileheight
     self.size = (self.scrmap_width,self.scrmap_height)
     for row in range(self.rows):
-      self.scrmap.colormap.append([])
-      self.scrmap.blockmap.append([])
-      self.scrmap.Character.append([])
       for col in range(self.cols):
-        position = (col,(self.rows-row-1))
-        mycolor = [random(),random(),random(),1]
-        self.scrmap.colormap[row].append(mycolor)
-        self.scrmap.blockmap[row].append(0)
-        self.scrmap.Character[row].append(Character())
-        self.scrmap.Character[row][-1].setChar(self.scrmap.chrmap[row][col],color=mycolor,block=0)
-        self.Draw(color=mycolor,map_position = position,texture=self.scrmap.Character[row][-1].texture)
-        ordn +=1
+        position = (col,row)
+        mycolor = self.scrmap.Char[row][col].color
+        #mycolor = [random(),random(),random(),1]
+        mytexture = self.scrmap.Char[row][col].texture
+        block = self.scrmap.Char[row][col].block
+        self.Draw(color=mycolor,map_position = position,texture=mytexture)
+   
 
-    self.scrmap.save_map('town2.map')
+    #self.scrmap.save_map('town2.map')
     self.hero = Hero()
     mycolor = [1,1,1,1]
     self.hero.setChar('@',color=mycolor,block=1)
@@ -165,13 +159,18 @@ class MyWidget(Widget):
 
   def update(self,*ignore):
     if self.direction != (0,0):
-      x,y = self.hero.map_position
-      mycolor = self.scrmap.colormap[y][x]
-      mytexture = self.scrmap.Character[y][x].texture
-      self.Draw(color=mycolor,map_position=(x,y),texture=mytexture)
-      self.hero.update_position(self.direction)
-      self.direction = (0,0)
-      self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
+      x,y = [pos+direc for pos,direc in zip(self.hero.map_position,self.direction)]
+      if self.scrmap.Char[y][x].block==1:
+        self.direction = (0,0)
+      else:
+        col,row = self.hero.map_position
+        mycolor = self.scrmap.Char[row][col].color
+        mytexture = self.scrmap.Char[row][col].texture
+        block = self.scrmap.Char[row][col].block
+        self.Draw(color=mycolor,map_position=(col,row),texture=mytexture)
+        self.hero.update_position(self.direction)
+        #self.direction = (0,0)
+        self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
 
   def on_touch_down(self, touch): 
     self.pos_ini =(touch.x, touch.y)
@@ -186,7 +185,7 @@ class MyWidget(Widget):
     '''
     with self.canvas:
       Color(*color)
-      position = (map_position[0]*self.tilewidth,map_position[1]*self.tileheight)
+      position = (map_position[0]*self.tilewidth,self.scrmap_height-((map_position[1]+1)*self.tileheight))
       Rectangle(pos=position,size=(self.tilewidth,self.tileheight),texture=texture)
 
 class TestGraphApp(App):
