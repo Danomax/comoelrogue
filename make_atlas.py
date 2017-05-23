@@ -12,18 +12,22 @@ def write_atlas(file_path, text):
     current_file.write(text)
 
 def make_atlas(imagefile, width, height, rows,cols):
-  ord = 0
+  ordn = 0
   sprite_width = int(width / cols)
   sprite_height = int(height / rows)
   text = '{ \n'
   text += '  "' + imagefile + '": {\n'
   for row in range(rows):
     for col in range(cols):
-      #if ord<32 or (ord>126 and ord < 161): 
-      text += '    "x' + str(ord) + '": [' + str(col*sprite_width + 1) + ',' + str(row*sprite_height + 1) + ',' + str(sprite_width) + ',' + str(sprite_height) + '], \n' 
+      #if ordn < 32 or (ordn > 126 and ordn < 161):
+      text += '    "x' + str(ordn) + '": [' + str(col*sprite_width) + ',' + str((height-((row+1)*sprite_height))) + ',' + str(sprite_width) + ',' + str(sprite_height) + ']'
       #else:
-      #  text += '    "' + chr(ord) + '": [' + str(col*sprite_width + 1) + ',' + str(row*sprite_height + 1) + ',' + str(sprite_width) + ',' + str(sprite_height) + '], \n' 
-      ord += 1
+      #  text += '    "' + chr(ordn) + '": [' + str(col*sprite_width + 1) + ',' + str((height-((row+1)*sprite_height)) + 1) + ',' + str(sprite_width) + ',' + str(sprite_height) + ']'
+      if row==rows-1 and col==cols-1:
+        text += '\n' 
+      else:
+        text += ',\n' 
+      ordn += 1
   text += "  } \n}"
   
   filename = imagefile[:-4] + ".atlas"
