@@ -41,7 +41,7 @@ class MyWidget(Widget):
         self.Draw(color=mycolor,map_position = position,texture=mytexture)
    
 
-    self.scrmap.save_map('bsp.map')
+    self.scrmap.save_map('bsp_v2.map')
     self.hero = Hero()
     mycolor = [1,1,1,1]
     self.hero.setChar('@',color=mycolor,block=1,block_sight=1)
@@ -74,6 +74,7 @@ class MyWidget(Widget):
   
   def on_touch_up(self, touch): 
     self.pos_end = (touch.x, touch.y)
+    self.direction = direction(self.pos_ini,self.pos_end)
 
   def Draw(self,color,map_position,texture):
     '''
