@@ -104,6 +104,7 @@ class BspNode():
         map.put_h_line(start_x,end_x,middle_y,FloorType)
         map.put_v_line(end_x,middle_y,rightpos[1],FloorType)
         self.corridor_data += 'vcorridor,startx,'+str(start_x)+',endx,'+str(end_x)+',middley,'+str(middle_y)+'\n'
+      #RESOLVER DILEMA DE QUE DEVOLVER EXACTAMENTE
       return(self.leftLeaf.room_pos,self.leftLeaf.room_size,self.corridor_data)
     else:
       return(self.room_pos,self.room_size,self.corridor_data)
