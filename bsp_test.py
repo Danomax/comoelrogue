@@ -12,11 +12,7 @@ from vector import *
 from map import *
 
 DEBUG = True
-#Stress the Application on animating the screen
-
-#El resultado mas importante de Stress es que SE DEBE
-#limpiar el canvas en cada iteracion de update para no
-#saturar la memoria
+#Test para probar BSP data
 
 class MyWidget(Widget):
   def __init__(self):
@@ -27,6 +23,7 @@ class MyWidget(Widget):
     self.tileheight = 16
     self.scrmap = Map()
     self.scrmap.BspTown(40,20)
+    #self.scrmap.load_from_file('bsp_v3.map')
     self.rows,self.cols = self.scrmap.rows,self.scrmap.cols
     self.scrmap_width = self.cols*self.tilewidth
     self.scrmap_height = self.rows*self.tileheight
@@ -41,11 +38,12 @@ class MyWidget(Widget):
         self.Draw(color=mycolor,map_position = position,texture=mytexture)
    
 
-    self.scrmap.save_map('bsp_v2.map')
+    self.scrmap.save_map('bsp_v3.map')
     self.hero = Hero()
     mycolor = [1,1,1,1]
     self.hero.setChar('@',color=mycolor,block=1,block_sight=1)
     position = int(self.cols/2),int(self.rows/2)
+    position = self.scrmap.start_position
     self.hero.set_map_position(position)
     self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
     Clock.schedule_interval(self.update, 1.0/2.0)
