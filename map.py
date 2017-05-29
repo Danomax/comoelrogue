@@ -73,6 +73,34 @@ class BspNode():
       map.put_rectangle(self.room_pos,self.room_size,FloorType)
     return self.room_data
 
+  def create_corridors_v2(self,map,FloorType):
+    if self.isLeaf:
+      return self.corridor_data
+    else:
+      #obtiene la Leaf mas a la derecha del hijo izquierdo y vice versa
+        RightestLeaf = self.leftLeaf.get_leaf('right')
+        LeftestLeaf = self.rightLeaf.get_leaf('left')
+        if self.split_direction == 0:
+          #corredor horizontal
+          start_y = randint(RightestLeaf.room_pos[1],RightestLeaf.room_pos[1]+RightestLeaf.room_size[1])
+          end_y = randint(LeftestLeaf.room_pos[1],LeftestLeaf.room_pos[1]+LeftestLeaf.room_size[1])
+          middle_x = randint(RightestLeaf.room_pos[0]+RightestLeaf.room_size[0],LeftestLeaf.room_pos[0])
+          map.put_h_line(RightestLeaf.room_pos[0]+RightestLeaf.room_size[0],middle_x,start_y,FloorType)
+          map.put_v_line(middle_x,start_y,end_y,FloorType)
+          map.put_h_line(middle_x,LeftestLeaf.room_pos[0],end_y,FloorType)
+          self.corridor_data += 'hcorridor,starty,'+str(start_y)+',endy,'+str(end_y)+',middlex,'+str(middle_x)+'\n'
+        elif self.split_direction ==1:
+          start_x = randint(RightestLeaf.room_pos[0],RightestLeaf.room_pos[0]+RightestLeaf.room_size[0])
+          end_x = randint(LeftestLeaf.room_pos[0],LeftestLeaf.room_pos[0]+LeftestLeaf.room_size[0])
+          middle_y = randint(RightestLeaf.room_pos[1]+RightestLeaf.room_size[1],LeftestLeaf.room_pos[1])
+          map.put_v_line(start_x,RightestLeaf.room_pos[1]+RightestLeaf.room_size[1],middle_y,FloorType)
+          map.put_h_line(start_x,end_x,middle_y,FloorType)
+          map.put_v_line(end_x,middle_y,LeftestLeaf.room_pos[1],FloorType)
+          self.corridor_data += 'vcorridor,startx,'+str(start_x)+',endx,'+str(end_x)+',middley,'+str(middle_y)+'\n'
+        self.corridor_data += self.leftLeaf.create_corridors_v2(map,FloorType)
+        self.corridor_data += self.rightLeaf.create_corridors_v2(map,FloorType)
+        return self.corridor_data
+
   def create_corridors(self,map,FloorType):
     #find Leafs and make a corridor between them
     if not self.isLeaf:
@@ -104,20 +132,43 @@ class BspNode():
         map.put_h_line(start_x,end_x,middle_y,FloorType)
         map.put_v_line(end_x,middle_y,rightpos[1],FloorType)
         self.corridor_data += 'vcorridor,startx,'+str(start_x)+',endx,'+str(end_x)+',middley,'+str(middle_y)+'\n'
-      #RESOLVER DILEMA DE QUE DEVOLVER EXACTAMENTE
+      
       return(self.leftLeaf.room_pos,self.leftLeaf.room_size,self.corridor_data)
     else:
       return(self.room_pos,self.room_size,self.corridor_data)
 
-  def get_center_position(self):
+  def get_center_position(self,direction):
     if self.isLeaf:
       return (int(self.room_pos[0]+(self.room_size[0]/2)),int(self.room_pos[1]+(self.room_size[1]/2)))
     else:
-      choose = randint(0,1)
-      if choose == 0:
-        return self.leftLeaf.get_center_position()
-      else:
-        return self.rightLeaf.get_center_position()
+      if direction == 'left':
+        return self.leftLeaf.get_center_position('left')
+      elif direction == 'right':
+        return self.rightLeaf.get_center_position('right')
+      if direction=='random':
+        choose = randint(0,1)
+        if choose == 0:
+          return self.leftLeaf.get_center_position('random')
+        else:
+          return self.rightLeaf.get_center_position('random')
+
+  def get_leaf(self,direction):
+    '''obtiene una hoja dependiendo de direction
+    direction = 'left','right','random'
+    '''
+    if self.isLeaf:
+      return self
+    else:
+      if direction == 'left':
+        return self.leftLeaf.get_leaf('left')
+      elif direction == 'right':
+        return self.rightLeaf.get_leaf('right')
+      elif direction == 'random':
+        choose = randint(0,1)
+        if choose == 0:
+          return self.leftLeaf.get_leaf('random')
+        elif choose == 1:
+          return self.rightLeaf.get_leaf('random')
 
 class Map():
   def __init__(self):
@@ -171,8 +222,8 @@ class Map():
     self.bsp_data += 'rooms\n' + BspTree.create_room(self,FloorType)
     CorridorType = Character()
     CorridorType.setChar(char=',',color=[0.7,0,0,1],block=0,block_sight=0)
-    self.bsp_data += 'corridors\n' + BspTree.create_corridors(self,CorridorType)[2]
-    self.start_position = BspTree.get_center_position()
+    self.bsp_data += 'corridors\n' + BspTree.create_corridors_v2(self,CorridorType)
+    self.start_position = BspTree.get_center_position('random')
 
   def load_from_file(self,filename):
     with open(filename) as f:
