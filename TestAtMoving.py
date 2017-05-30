@@ -8,121 +8,11 @@ from kivy.clock import Clock
 
 from random import random
 
+from vector import *
+from map import *
+
 DEBUG = True
 #an Arroba moving on the screen
-
-def direction(pos_ini,pos_end):
-  '''
-  define la direccion dadas las diferencias entre las posiciones iniciales y finales
-  del movimiento touch. 
-  '''
-  dx = pos_end[0]-pos_ini[0]
-  dy = pos_end[1]-pos_ini[1]
-  if dx>=0 and dx>= abs(dy):
-    direc=(1,0)
-  elif dy>=0 and dy>=abs(dx):
-    direc=(0,-1)
-  elif dx<0 and abs(dx)>=abs(dy):
-    direc=(-1,0)
-  elif dy<0 and abs(dy)>=abs(dx):
-    direc=(0,1)
-  return direc
-
-class Character(Image):
-  def __init__(self,**kwargs):
-    super(Character, self).__init__(**kwargs)
-    self.char = ''
-    self.color = []
-    self.block = 0 
-
-  def setChar(self,char,color,block):
-    self.char = char
-    ordn = ord(self.char)
-    self.color = color
-    #if ordn < 32 or (ordn > 126 and ordn < 161):
-    self.source = 'atlas://roguelike16x16_gs_ro/x' + str(ordn)
-    #else:
-    #  self.source = 'atlas://roguelike16x16_gs_ro/' + chr(ordn)
-    self.block = block
-
-  def setColor(self,color):
-    self.color = color
-
-  def setBlock(self,block):
-    self.block = block
-
-class Hero(Character):
-  def __init__(self,**kwargs):
-    super(Character,self).__init__(**kwargs)
-    self.map_position = (0,0)
-
-  def set_map_position(self,position):
-    self.map_position = position
-
-  def update_position(self,direction):
-    self.map_position = ([mypos+direc for mypos,direc in zip(self.map_position,direction)])
-
-class Map():
-  def __init__(self):
-    self.Char=[]
-    self.cols = 0
-    self.rows = 0
-
-  def load_from_file(self,filename):
-    with open(filename) as f:
-      st=f.readline().strip()
-      a = st.find(',')
-      self.rows,self.cols = int(st[:a]),int(st[-a:])
-      seq = f.readlines()
-      seq = [s.strip() for s in seq]
-      row=0
-      for row in range(self.rows):
-        self.Char.append([])
-        for col in range(self.cols):
-          self.Char[row].append(Character())
-          char = seq[row][col]
-          cl = seq[row+self.rows].split(',') #lista de linea en ','
-          color = [float(ci) for ci in cl[4*col:(4*(col+1))]] 
-          block = seq[row+2*self.rows][col]
-          self.Char[row][-1].setChar(char,color,block)
-
-  def make_map_dictionary(self,rows,cols):
-    ordn = 0
-    for row in range(rows):
-      self.Char.append([])
-      for col in range(cols):
-        self.Char[row].append(Character())
-        mycolor = [random(),random(),random(),1]
-        if ordn < 32 or ordn > 126:
-          self.Char[row][-1].setChar(char=' ',block=0)
-        else:
-          self.Char[row].append(Character())
-          self.Char[row][-1].setChar(char=chr(ordn),color=mycolor,block=1)
-        ordn += 1
-    self.cols = cols
-    self.rows = rows
-
-  def save_map(self,filename):
-    seq=str(self.rows)+','+str(self.cols)+'\n'
-    for row in range(self.rows):
-      for col in range(self.cols):
-        seq += self.Char[row][col].char
-      seq+='\n'
-    for row in range(self.rows):
-      for col in range(self.cols):
-        seq += str(self.Char[row][col].color[0]) + ','
-        seq += str(self.Char[row][col].color[1]) + ','
-        seq += str(self.Char[row][col].color[2]) + ','
-        seq += str(self.Char[row][col].color[3]) + ','
-      seq+='\n'
-    for row in range(self.rows):
-      for col in range(self.cols):
-        seq += str(self.Char[row][col].block)
-      seq+='\n'
-
-    with open(filename,'w') as f:
-      f.write(seq)
-
 
 class MyWidget(Widget):
   def __init__(self):
@@ -132,7 +22,7 @@ class MyWidget(Widget):
     self.tilewidth = 16
     self.tileheight = 16
     self.scrmap = Map()
-    self.scrmap.load_from_file('town2.map')
+    self.scrmap.load_from_file('town3.map')
     self.rows,self.cols = self.scrmap.rows,self.scrmap.cols
     if DEBUG: print(str(self.rows)+','+str(self.cols))
     self.scrmap_width = self.cols*self.tilewidth
@@ -146,31 +36,33 @@ class MyWidget(Widget):
         mytexture = self.scrmap.Char[row][col].texture
         block = self.scrmap.Char[row][col].block
         self.Draw(color=mycolor,map_position = position,texture=mytexture)
-   
-
-    #self.scrmap.save_map('town2.map')
+    self.scrmap.save_map('hardbuild_v1.map')
     self.hero = Hero()
     mycolor = [1,1,1,1]
-    self.hero.setChar('@',color=mycolor,block=1)
+    self.hero.setChar('@',color=mycolor,block=1,block_sight=1)
     position = int(self.cols/2),int(self.rows/2)
     self.hero.set_map_position(position)
     self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
     Clock.schedule_interval(self.update, 1.0/2.0)
 
   def update(self,*ignore):
+    self.canvas.clear()
+    for row in range(self.rows):
+      for col in range(self.cols):
+        mycolor = self.scrmap.Char[row][col].color
+        mytexture = self.scrmap.Char[row][col].texture
+        self.Draw(color=mycolor,map_position=(col,row),texture=mytexture)
     if self.direction != (0,0):
       x,y = [pos+direc for pos,direc in zip(self.hero.map_position,self.direction)]
       if self.scrmap.Char[y][x].block==1:
         self.direction = (0,0)
+        self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
       else:
-        col,row = self.hero.map_position
-        mycolor = self.scrmap.Char[row][col].color
-        mytexture = self.scrmap.Char[row][col].texture
-        block = self.scrmap.Char[row][col].block
-        self.Draw(color=mycolor,map_position=(col,row),texture=mytexture)
         self.hero.update_position(self.direction)
         #self.direction = (0,0)
         self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
+    else:
+      self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
 
   def on_touch_down(self, touch): 
     self.pos_ini =(touch.x, touch.y)

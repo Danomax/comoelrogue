@@ -22,50 +22,39 @@ class MyWidget(Widget):
     self.tilewidth = 16
     self.tileheight = 16
     self.scrmap = Map()
-    #self.scrmap.BspTown(40,20)
-    self.scrmap.load_from_file('bsp_v3.map')
+    self.scrmap.BspTown(40,20)
+    #self.scrmap.load_from_file('bsp_v4.map')
     self.rows,self.cols = self.scrmap.rows,self.scrmap.cols
     self.scrmap_width = self.cols*self.tilewidth
     self.scrmap_height = self.rows*self.tileheight
     self.size = (self.scrmap_width,self.scrmap_height)
-    for row in range(self.rows):
-      for col in range(self.cols):
-        position = (col,row)
-        mycolor = self.scrmap.Char[row][col].color
-        #mycolor = [random(),random(),random(),1]
-        mytexture = self.scrmap.Char[row][col].texture
-        block = self.scrmap.Char[row][col].block
-        self.Draw(color=mycolor,map_position = position,texture=mytexture)
-   
-
-    #self.scrmap.save_map('bsp_v3.map')
+    self.scrmap.save_map('bsp_v4.map')
     self.hero = Hero()
-    mycolor = [1,1,1,1]
+    mycolor = Colors.color_dict['light_player']
     self.hero.setChar('@',color=mycolor,block=1,block_sight=1)
-    position = int(self.cols/2),int(self.rows/2)
     position = self.scrmap.start_position
     self.hero.set_map_position(position)
-    self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
     Clock.schedule_interval(self.update, 1.0/2.0)
 
   def update(self,*ignore):
     self.canvas.clear()
-    for row in range(self.rows):
-      for col in range(self.cols):
-        mycolor = self.scrmap.Char[row][col].color
-        mytexture = self.scrmap.Char[row][col].texture
-        self.Draw(color=mycolor,map_position=(col,row),texture=mytexture)
     if self.direction != (0,0):
       x,y = [pos+direc for pos,direc in zip(self.hero.map_position,self.direction)]
       if self.scrmap.Char[y][x].block==1:
         self.direction = (0,0)
-        self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
       else:
         self.hero.update_position(self.direction)
-        #self.direction = (0,0)
-        self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
-    else:
-      self.Draw(color=self.hero.color,map_position=self.hero.map_position,texture=self.hero.texture)
+
+    for row in range(self.rows):
+      for col in range(self.cols):
+        backcolor = self.scrmap.Char[row][col].color
+        if self.hero.map_position[0]==col and self.hero.map_position[1]==row:
+          forecolor = self.hero.color
+          mytexture = self.hero.texture
+        else:
+          forecolor = backcolor
+          mytexture=self.scrmap.Char[row][col].texture
+        self.Draw(forecolor,backcolor,map_position=(col,row),texture=mytexture)
 
   def on_touch_down(self, touch): 
     self.pos_ini =(touch.x, touch.y)
@@ -74,13 +63,15 @@ class MyWidget(Widget):
     self.pos_end = (touch.x, touch.y)
     self.direction = direction(self.pos_ini,self.pos_end)
 
-  def Draw(self,color,map_position,texture):
+  def Draw(self,forecolor,backcolor,map_position,texture):
     '''
     Dibuja el caracter seteado en texture en la pantalla
     '''
     with self.canvas:
-      Color(*color)
       position = (map_position[0]*self.tilewidth,self.scrmap_height-((map_position[1]+1)*self.tileheight))
+      Color(*backcolor)
+      Rectangle(pos=position,size=(self.tilewidth,self.tileheight))
+      Color(*forecolor)
       Rectangle(pos=position,size=(self.tilewidth,self.tileheight),texture=texture)
 
 class BspTestApp(App):
