@@ -6,13 +6,13 @@ from kivy.graphics import Color
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.clock import Clock
 
-from random import random,randint
+from random import random
 
 from vector import *
 from map import *
 
 DEBUG = True
-#Test para probar BSP data
+#Implementando Background y Foreground Color en Pantalla
 
 class MyWidget(Widget):
   def __init__(self):
@@ -22,17 +22,21 @@ class MyWidget(Widget):
     self.tilewidth = 16
     self.tileheight = 16
     self.scrmap = Map()
-    #self.scrmap.BspTown(40,20)
-    self.scrmap.load_from_file('bsp_v4.map')
+    self.scrmap.load_from_file('town_v4.map')
     self.rows,self.cols = self.scrmap.rows,self.scrmap.cols
     self.scrmap_width = self.cols*self.tilewidth
     self.scrmap_height = self.rows*self.tileheight
     self.size = (self.scrmap_width,self.scrmap_height)
-    #self.scrmap.save_map('bsp_v4.map')
+    for row in range(self.rows):
+      for col in range(self.cols):
+        mybackcolor = Colors.color_dict['dark_ground']
+        self.scrmap.Char[row][col].backcolor = mybackcolor
+    #self.scrmap.save_map('town_v4.map')
     self.hero = Hero()
-    mycolor = Colors.color_dict['light_player']
-    self.hero.setChar('@',forecolor=mycolor,backcolor=Colors.color_dict['black'],block=1,block_sight=1)
-    position = self.scrmap.start_position
+    myforecolor = Colors.color_dict['light_player']
+    mybackcolor = Colors.color_dict['light_ground']
+    self.hero.setChar('@',forecolor=myforecolor,backcolor=mybackcolor,block=1,block_sight=1)
+    position = int(self.cols/2),int(self.rows/2)
     self.hero.set_map_position(position)
     Clock.schedule_interval(self.update, 1.0/2.0)
 
@@ -44,7 +48,6 @@ class MyWidget(Widget):
         self.direction = (0,0)
       else:
         self.hero.update_position(self.direction)
-
     for row in range(self.rows):
       for col in range(self.cols):
         mybackcolor = self.scrmap.Char[row][col].backcolor
@@ -52,8 +55,8 @@ class MyWidget(Widget):
           myforecolor = self.hero.forecolor
           mytexture = self.hero.texture
         else:
-          myforecolor = mybackcolor
-          mytexture=self.scrmap.Char[row][col].texture
+          myforecolor = self.scrmap.Char[row][col].forecolor
+          mytexture = self.scrmap.Char[row][col].texture
         self.Draw(forecolor=myforecolor,backcolor=mybackcolor,map_position=(col,row),texture=mytexture)
 
   def on_touch_down(self, touch): 
@@ -74,11 +77,11 @@ class MyWidget(Widget):
       Color(*forecolor)
       Rectangle(pos=position,size=(self.tilewidth,self.tileheight),texture=texture)
 
-class BspTestApp(App):
+class Back_Fore_App(App):
   def build(self):
     widg = MyWidget()
     Window.size = widg.size
     return widg
 
 if __name__ == "__main__":
-  BspTestApp().run()
+  Back_Fore_App().run()

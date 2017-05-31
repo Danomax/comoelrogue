@@ -175,13 +175,13 @@ class Map():
       self.Char.append([])
       for col in range(width):
         WallType = Character()
-        WallType.setChar(char=' ',forecolor=Colors.color_dict['light_wall'],backcolor=Colors.color_dict['black'],block=1,block_sight=1)
+        WallType.setChar(char=' ',forecolor=Colors.color_dict['light_wall'],backcolor=Colors.color_dict['dark_wall'],block=1,block_sight=1)
         self.Char[row].append(WallType)
     FloorType = Character()
-    FloorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['black'],block=0,block_sight=0)
+    FloorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['dark_ground'],block=0,block_sight=0)
     self.bsp_data += 'rooms\n' + BspTree.create_room(self,FloorType)
     CorridorType = Character()
-    CorridorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['black'],block=0,block_sight=0)
+    CorridorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['dark_ground'],block=0,block_sight=0)
     self.bsp_data += 'corridors\n' + BspTree.create_corridors(self,CorridorType)
     self.start_position = BspTree.get_center_position('random')
 
@@ -196,7 +196,7 @@ class Map():
       self.rows,self.cols = int(head[1]),int(head[2])
       self.start_position = int(head[3]),int(head[4])
       seq = f.readlines()
-      seq = [s.strip() for s in seq]
+      #seq = [s.strip() for s in seq]
       row=0
       for row in range(self.rows):
         self.Char.append([])
