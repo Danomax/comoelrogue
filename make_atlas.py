@@ -33,4 +33,4 @@ def make_atlas(imagefile, width, height, rows,cols):
   filename = imagefile[:-4] + ".atlas"
   write_atlas(filename,text)
   
-make_atlas('roguelike16x16_gs_ro.png',256,256,16,16)
+make_atlas('roguelike16x16_gs_ro2.png',256,256,16,16)
