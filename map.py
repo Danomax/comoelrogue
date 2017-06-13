@@ -3,7 +3,7 @@ from character import *
 from random import random, randint
 from perlin import *
 import time
-
+import colorsys 
 
 BSP_MIN_SIZE = 8
 ROOM_MIN_SIZE = 3
@@ -61,18 +61,18 @@ class BspNode():
     self.bsp_data += self.rightLeaf.split(direction=dir)
     return self.bsp_data
 
-  def create_room(self,map,FloorType):
+  def create_room(self,map):
     if not self.isLeaf:
-      self.room_data += self.leftLeaf.create_room(map,FloorType)
-      self.room_data += self.rightLeaf.create_room(map,FloorType)
+      self.room_data += self.leftLeaf.create_room(map)
+      self.room_data += self.rightLeaf.create_room(map)
     else:
       self.room_size = (randint(ROOM_MIN_SIZE,self.size[0]-2),randint(ROOM_MIN_SIZE,self.size[1]-2))
       self.room_pos = (randint(self.pos[0]+1,self.pos[0]+self.size[0]-self.room_size[0]-1),randint(self.pos[1]+1,self.pos[1]+self.size[1]-self.room_size[1]-1))
       self.room_data += 'room,roompos,'+str(self.room_pos[0])+','+str(self.room_pos[1])+',roomsize,'+str(self.room_size[0])+','+str(self.room_size[1])+'\n'
-      map.put_rectangle(self.room_pos,self.room_size,FloorType)
+      map.put_rectangle(self.room_pos,self.room_size)
     return self.room_data
 
-  def create_corridors(self,map,FloorType):
+  def create_corridors(self,map):
     if self.isLeaf:
       return self.corridor_data
     else:
@@ -84,20 +84,20 @@ class BspNode():
           start_y = randint(RightestLeaf.room_pos[1],RightestLeaf.room_pos[1]+RightestLeaf.room_size[1])
           end_y = randint(LeftestLeaf.room_pos[1],LeftestLeaf.room_pos[1]+LeftestLeaf.room_size[1])
           middle_x = randint(RightestLeaf.room_pos[0]+RightestLeaf.room_size[0],LeftestLeaf.room_pos[0])
-          map.put_h_line(RightestLeaf.room_pos[0]+RightestLeaf.room_size[0],middle_x,start_y,FloorType)
-          map.put_v_line(middle_x,start_y,end_y,FloorType)
-          map.put_h_line(middle_x,LeftestLeaf.room_pos[0],end_y,FloorType)
+          map.put_h_line(RightestLeaf.room_pos[0]+RightestLeaf.room_size[0],middle_x,start_y)
+          map.put_v_line(middle_x,start_y,end_y)
+          map.put_h_line(middle_x,LeftestLeaf.room_pos[0],end_y)
           self.corridor_data += 'hcorridor,starty,'+str(start_y)+',endy,'+str(end_y)+',middlex,'+str(middle_x)+'\n'
         elif self.split_direction ==1:
           start_x = randint(RightestLeaf.room_pos[0],RightestLeaf.room_pos[0]+RightestLeaf.room_size[0])
           end_x = randint(LeftestLeaf.room_pos[0],LeftestLeaf.room_pos[0]+LeftestLeaf.room_size[0])
           middle_y = randint(RightestLeaf.room_pos[1]+RightestLeaf.room_size[1],LeftestLeaf.room_pos[1])
-          map.put_v_line(start_x,RightestLeaf.room_pos[1]+RightestLeaf.room_size[1],middle_y,FloorType)
-          map.put_h_line(start_x,end_x,middle_y,FloorType)
-          map.put_v_line(end_x,middle_y,LeftestLeaf.room_pos[1],FloorType)
+          map.put_v_line(start_x,RightestLeaf.room_pos[1]+RightestLeaf.room_size[1],middle_y)
+          map.put_h_line(start_x,end_x,middle_y)
+          map.put_v_line(end_x,middle_y,LeftestLeaf.room_pos[1])
           self.corridor_data += 'vcorridor,startx,'+str(start_x)+',endx,'+str(end_x)+',middley,'+str(middle_y)+'\n'
-        self.corridor_data += self.leftLeaf.create_corridors(map,FloorType)
-        self.corridor_data += self.rightLeaf.create_corridors(map,FloorType)
+        self.corridor_data += self.leftLeaf.create_corridors(map)
+        self.corridor_data += self.rightLeaf.create_corridors(map)
         return self.corridor_data
 
   def get_center_position(self,direction):
@@ -161,54 +161,103 @@ class View():
 class Map():
   def __init__(self):
     self.Char=[]
+    self.Back=[]
     self.cols = 0
     self.rows = 0
     self.start_position = (0,0)
     self.bsp_data = ''
 
-  def put_rectangle(self,pos,size,CharType):
+  def put_rectangle(self,pos,size):
     for row in range(size[1]):
       for col in range(size[0]):
-          self.Char[row+pos[1]][col+pos[0]] = CharType
+          self.Char[row+pos[1]][col+pos[0]].copyChar(self.Back[row+pos[1]][col+pos[0]])
 
-  def put_v_line(self,x,y_ini,y_end,CharType):
+  def put_v_line(self,x,y_ini,y_end):
     if y_ini < y_end+1:
       for row in range(y_ini,y_end+1):
-        self.Char[row][x] = CharType
+        self.Char[row][x].copyChar(self.Back[row][x])
     else:
       for row in range(y_end,y_ini+1):
-        self.Char[row][x] = CharType
+        self.Char[row][x].copyChar(self.Back[row][x])
 
-  def put_h_line(self,x_ini,x_end,y,CharType):
+  def put_h_line(self,x_ini,x_end,y):
     if x_ini < x_end+1:
       for col in range(x_ini,x_end+1):
-        self.Char[y][col] = CharType
+        self.Char[y][col].copyChar(self.Back[y][col])
     else:
       for col in range(x_end,x_ini+1):
-        self.Char[y][col] = CharType
+        self.Char[y][col].copyChar(self.Back[y][col])
+  
+  def lerp_color(self,color1,color2,value,start_value,end_value):
+    '''
+    linear interpolation between 2 color
+    '''
+    r = []
+    for c,d in zip(color1,color2):
+      r += [(d-c)*((end_value-start_value)*value+start_value)+c]
+    return r
+  
+  def PerlinTwoColor(self,width,height,color1,color2):
+    '''
+    genera un mapa en self.Back con ruido Perlin entre 2 colores
+    '''
+    rgb1 = color1[0:3]
+    alpha1 = color1[3:]
+    ##RGBTOHSV DEVUELVE LISTA NO TUPLA, REVISAR O CAMBIAR A UNA FUNCION PROPIA DE RGB TO HSV!!!!!!
+    color1hsv =  list(colorsys.rgb_to_hsv(rgb1[0],rgb1[1],rgb1[2]))+alpha1
+    rgb2 = color2[0:3]
+    alpha2 = color2[3:]
+    color2hsv = list(colorsys.rgb_to_hsv(rgb2[0],rgb2[1],rgb2[2])) + alpha2
+    noiseperiod = 256
+    noisefreq = 8
+    colornoise=SimplexNoise()
+    colornoise.randomize(period=noiseperiod)
+    octaves = 4
+    self.Back = []
+    for row in range(height):
+      self.Back.append([])
+      for col in range(width):
+        x,y=noisefreq*col/noiseperiod,noisefreq*row/noiseperiod
+        noiseval = 0
+        for octave in range(octaves):
+          val = 2**octave
+          noiseval += (2*octaves/val)*colornoise.noise2(val*x,val*y)
+        noiseval = pow(noiseval/(2**octaves-1)+0.5,1.0)
+        cl = self.lerp_color(color1hsv,color2hsv,noiseval,0,1)
+        cl_rgb = colorsys.hsv_to_rgb(cl[0],cl[1],cl[2])
+        mybackcolor = list(cl_rgb)+cl[3:]        
+        myChar = Character()
+        myChar.setChar(char=' ',forecolor = Colors.color_dict['black'],backcolor=mybackcolor,block=0,block_sight=0)
+        self.Back[row].append(myChar)
+
 
   def PerlinMap(self,width,height):
     self.noiseperiod = 256
-    self.noisefreq = 4
-    self.simplexnoise=SimplexNoise()
-    self.simplexnoise.randomize(period=self.noiseperiod)
+    self.noisefreq = 2
+    self.heightnoise=SimplexNoise()
+    self.heightnoise.randomize(period=self.noiseperiod)
+    self.climatenoise=SimplexNoise()
+    self.climatenoise.randomize(period=self.noiseperiod)
     self.octaves = 4
     for row in range(height):
       self.Char.append([])
       for col in range(width):
         x,y=self.noisefreq*col/self.noiseperiod,self.noisefreq*row/self.noiseperiod
-        noiseval = 0
+        heightval = 0
+        climateval = 0
         for octave in range(self.octaves):
           val = 2**octave
-          noiseval += (2*self.octaves/val)*self.simplexnoise.noise2(val*x,val*y)
-        rgbval = pow(noiseval/(2**self.octaves-1)+0.5,2.0)
-        mybackcolor = self.biome(rgbval)
+          heightval += (2*self.octaves/val)*self.heightnoise.noise2(val*x,val*y)
+          climateval += (2*self.octaves/val)*self.climatenoise.noise2(val*x,val*y)
+        heightval = pow(heightval/(2**self.octaves-1)+0.5,4.0)
+        climateval = pow(climateval/(2**self.octaves-1)+0.5,4.0)
+        mybackcolor = self.biome2(heightval,climateval)
         myforecolor = Colors.color_dict['red']
         self.Char[row].append(Character())
         self.Char[row][col].setChar(' ',forecolor=myforecolor,backcolor = mybackcolor,block=0,block_sight=0)
     self.start_position = int(width/2),int(height/2)
 
-  def biome(self,elev):
+  def biome1(self,elev):
     if elev < 0.05: biocolor = Colors.color_dict['terrain_deeps']
     elif (elev < 0.1): biocolor = Colors.color_dict['terrain_shallow']
     elif (elev < 0.3): biocolor = Colors.color_dict['terrain_sand']
@@ -218,6 +267,36 @@ class Map():
     elif (elev >= 0.9): biocolor = Colors.color_dict['terrain_snow']
     return [bio+(elev%0.2-0.2) for bio in biocolor]
 
+  def biome2(self,heightval,climateval):
+    e = heightval
+    m = climateval
+    if (e < 0.05): biocolor = Colors.color_dict['terrain_deeps']
+    elif (e < 0.1): biocolor = Colors.color_dict['terrain_shallow']
+  
+    elif (e > 0.7):
+      if (m < 0.1): biocolor = Colors.color_dict['terrain_sand']
+      elif (m < 0.2): biocolor = Colors.color_dict['terrain_shore']
+      elif (m < 0.5): biocolor = Colors.color_dict['terrain_grass']
+      else: biocolor = Colors.color_dict['terrain_snow']
+
+    elif (e > 0.5):
+      if (m < 0.33): biocolor = Colors.color_dict['terrain_sand']
+      elif (m < 0.66): biocolor = Colors.color_dict['forestgreen']
+      else: biocolor = Colors.color_dict['snow']
+
+    elif (e > 0.3):
+      if (m < 0.16): biocolor = Colors.color_dict['terrain_dirt']
+      elif (m < 0.50): biocolor = Colors.color_dict['palegreen']
+      elif (m < 0.83): biocolor = Colors.color_dict['olivegreen']
+      else: biocolor = Colors.color_dict['seagreen']
+
+    else:
+      if (m < 0.16): biocolor = Colors.color_dict['dust']
+      elif (m < 0.33): biocolor = Colors.color_dict['terrain_rock']
+      elif (m < 0.66): biocolor = Colors.color_dict['wheat']
+      else: biocolor = Colors.color_dict['snow']
+    
+    return [bio + e for bio in biocolor]
 
   def BspTown(self,width,height):
     '''
@@ -232,23 +311,26 @@ class Map():
     dir = randint(0,1)
     self.bsp_data += BspTree.split(direction=dir)
     b_time = time.clock()
+    color1 = Colors.color_dict['darkbrick']
+    color2 = Colors.color_dict['darkmetal']
+    self.PerlinTwoColor(width,height,color1,color2)
     for row in range(height):
       self.Char.append([])
       for col in range(width):
         WallType = Character()
-        WallType.setChar(char=' ',forecolor=Colors.color_dict['light_wall'],backcolor=Colors.color_dict['dark_wall'],block=1,block_sight=1)
+        mybackcolor = self.Back[row][col].backcolor
+        WallType.setChar(char=' ',forecolor=Colors.color_dict['black'],backcolor=mybackcolor,block=1,block_sight=1)
         self.Char[row].append(WallType)
     c_time = time.clock()
-    FloorType = Character()
-    FloorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['dark_ground'],block=0,block_sight=0)
-    self.bsp_data += 'rooms\n' + BspTree.create_room(self,FloorType)
+    color1 = Colors.color_dict['darkground']
+    color2 = Colors.color_dict['darkgreen']
+    self.PerlinTwoColor(width,height,color1,color2)
+    self.bsp_data += 'rooms\n' + BspTree.create_room(self)
+    self.bsp_data += 'corridors\n' + BspTree.create_corridors(self)
     d_time = time.clock()
-    CorridorType = Character()
-    CorridorType.setChar(char=' ',forecolor=Colors.color_dict['light_ground'],backcolor=Colors.color_dict['dark_ground'],block=0,block_sight=0)
-    self.bsp_data += 'corridors\n' + BspTree.create_corridors(self,CorridorType)
     self.start_position = BspTree.get_center_position('random')
     e_time = time.clock()
-    #print(str(a_time)+',\n'+str(b_time)+',\n'+str(c_time)+',\n'+str(d_time)+',\n'+str(e_time))
+    print(str(a_time)+',\n'+str(b_time)+',\n'+str(c_time)+',\n'+str(d_time)+',\n'+str(e_time))
 
   def load_from_file(self,filename):
     with open(filename) as f:

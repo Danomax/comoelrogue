@@ -36,9 +36,25 @@ class ColorDict():
 Colors = ColorDict()
 Colors.load_colors('colors_kivy.def')
 
-class Character(Image):
+class TextureDict():
   def __init__(self,**kwargs):
-    super(Character, self).__init__(**kwargs)
+    super(TextureDict,self).__init__(**kwargs)
+    self.texture_dict = {}
+  
+  def load_chars(self,filename):
+    ordn = 0
+    for ordn in range(256):
+      #if ordn < 32 or (ordn > 126 and ordn < 161):
+      self.texture_dict[ordn] = Image()
+      self.texture_dict[ordn].source = 'atlas://'+filename+'/x' + str(ordn)
+      #else:
+      #  self.source = 'atlas://'+filename+'/' + chr(ordn)
+
+Textures = TextureDict()
+Textures.load_chars('roguelike16x16_gs_ro2')
+
+class Character():
+  def __init__(self,**kwargs):
     self.char = ''
     self.backcolor = Colors.color_dict['black']
     self.forecolor = Colors.color_dict['black']
@@ -50,12 +66,15 @@ class Character(Image):
     ordn = ord(self.char)
     self.forecolor = forecolor
     self.backcolor = backcolor
-    #if ordn < 32 or (ordn > 126 and ordn < 161):
-    self.source = 'atlas://roguelike16x16_gs_ro2/x' + str(ordn)
-    #else:
-    #  self.source = 'atlas://roguelike16x16_gs_ro2/' + chr(ordn)
     self.block = block
     self.block_sight = block_sight
+
+  def copyChar(self,Source):
+    self.char = Source.char
+    self.backcolor = Source.backcolor
+    self.forecolor = Source.forecolor
+    self.block = Source.block
+    self.block_sight = Source.block_sight
 
 class Hero(Character):
   def __init__(self,**kwargs):

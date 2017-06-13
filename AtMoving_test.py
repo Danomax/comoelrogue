@@ -12,7 +12,7 @@ from vector import *
 from map import *
 
 DEBUG = True
-#Implementando Background y Foreground Color en Pantalla
+#an Arroba moving on the screen
 
 class MyWidget(Widget):
   def __init__(self):
@@ -24,20 +24,27 @@ class MyWidget(Widget):
     self.mymap = Map()
     self.mymap.load_from_file('town_v4.map')
     self.rows,self.cols = self.mymap.rows,self.mymap.cols
+    if DEBUG: print(str(self.rows)+','+str(self.cols))
     self.mymap_width = self.cols*self.tilewidth
     self.mymap_height = self.rows*self.tileheight
     self.size = (self.mymap_width,self.mymap_height)
     for row in range(self.rows):
       for col in range(self.cols):
-        mybackcolor = Colors.color_dict['dark_ground']
-        self.mymap.Char[row][col].backcolor = mybackcolor
-    #self.mymap.save_map('town_v4.map')
+        position = (col,row)
+        myforecolor = self.mymap.Char[row][col].forecolor
+        mybackcolor = self.mymap.Char[row][col].backcolor
+        #mycolor = [random(),random(),random(),1]
+        mytexture = Textures.texture_dict[ord(self.mymap.Char[row][col].char)].texture
+        self.Draw(forecolor=myforecolor,backcolor=mybackcolor,map_position = position,texture=mytexture)
+    #self.scrmap.save_map('hardbuild_v1.map')
     self.hero = Hero()
     myforecolor = Colors.color_dict['light_player']
-    mybackcolor = Colors.color_dict['light_ground']
+    mybackcolor = [0,0,0,1]
     self.hero.setChar('@',forecolor=myforecolor,backcolor=mybackcolor,block=1,block_sight=1)
     position = int(self.cols/2),int(self.rows/2)
     self.hero.set_map_position(position)
+    mytexture = Textures.texture_dict[ord(self.hero.char)].texture
+    self.Draw(forecolor=self.hero.color,backcolor=self.hero.backcolor,map_position=self.hero.map_position,texture=mytexture)
     Clock.schedule_interval(self.update, 1.0/2.0)
 
   def update(self,*ignore):
@@ -77,11 +84,11 @@ class MyWidget(Widget):
       Color(*forecolor)
       Rectangle(pos=position,size=(self.tilewidth,self.tileheight),texture=texture)
 
-class Back_Fore_testApp(App):
+class AtMoving_testApp(App):
   def build(self):
     widg = MyWidget()
     Window.size = widg.size
     return widg
 
 if __name__ == "__main__":
-  Back_Fore_testApp().run()
+  AtMoving_testApp().run()

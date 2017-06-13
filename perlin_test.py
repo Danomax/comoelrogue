@@ -27,11 +27,13 @@ class MyWidget(Widget):
     ordn = 0
     self.tilewidth = 16
     self.tileheight = 16
+    self.MapWidth,self.MapHeight = 80,80
+    self.viewWidth,self.viewHeight = 40,30
     self.scrmap = Map()
-    self.scrmap.PerlinMap(100,100)
-    self.view = View(40,20,100,100)
-    self.viewwidth,self.viewheight = self.tilewidth*self.view.viewcols,self.tileheight*self.view.viewrows
-    self.size = (self.viewwidth,self.viewheight)
+    self.scrmap.PerlinMap(self.MapWidth,self.MapHeight)
+    self.view = View(self.viewWidth,self.viewHeight,self.MapWidth,self.MapHeight)
+    self.viewsize = self.tilewidth*self.view.viewcols,self.tileheight*self.view.viewrows
+    self.size = self.viewsize
     #self.scrmap.save_map('perlintest_v4.map')
     self.hero = Hero()
     myforecolor = Colors.color_dict['light_player']
@@ -54,6 +56,7 @@ class MyWidget(Widget):
       for col in range(self.view.viewcols):
         x,y = self.view_position[0]+col,self.view_position[1]+row
         mybackcolor = self.scrmap.Char[y][x].backcolor
+        #mybackcolor = [0,0,0,1]
         if self.hero.map_position[0]==x and self.hero.map_position[1]==y:
           myforecolor = self.hero.color
           mytexture = self.hero.texture
@@ -74,7 +77,7 @@ class MyWidget(Widget):
     Dibuja el caracter seteado en texture en la pantalla
     '''
     with self.canvas:
-      position = (view_position[0]*self.tilewidth,self.viewheight-((view_position[1]+1)*self.tileheight))
+      position = (view_position[0]*self.tilewidth,self.viewsize[1]-((view_position[1]+1)*self.tileheight))
       Color(*backcolor)
       Rectangle(pos=position,size=(self.tilewidth,self.tileheight))
       Color(*forecolor)
