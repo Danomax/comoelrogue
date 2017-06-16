@@ -60,6 +60,7 @@ class Character():
     self.forecolor = Colors.color_dict['black']
     self.block = 0
     self.block_sight = 0 
+    self.explored = 0
 
   def setChar(self,char,forecolor,backcolor,block,block_sight):
     self.char = char
@@ -75,6 +76,7 @@ class Character():
     self.forecolor = Source.forecolor
     self.block = Source.block
     self.block_sight = Source.block_sight
+    self.explored = Source.explored
 
 class Hero(Character):
   def __init__(self,**kwargs):

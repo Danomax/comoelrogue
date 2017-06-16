@@ -2,11 +2,13 @@
 from character import *
 from random import random, randint
 from perlin import *
+from vector import *
 import time
-import colorsys 
+import rpas  #FOV algorythm 
 
 BSP_MIN_SIZE = 8
 ROOM_MIN_SIZE = 3
+FOV_RADIUS = 10
 FILE_VERSION = 4
 
 class BspNode():
@@ -139,6 +141,29 @@ class View():
     self.viewrows = rows
     self.mapcols = map_cols
     self.maprows = map_rows
+    noiseperiod = 256
+    noisefreq = 1
+    self.torchnoise = SimplexNoise()
+    self.torchnoise.randomize(period=noiseperiod)
+    self.torchview = [0,0]
+
+  def get_alpha(self,focus,point,radius):
+    '''
+    obtiene el nivel de alpha dependiendo de la distancia al foco y el ruido torchnoise
+    '''
+    #se mueve ligeramente el focus (titileo)
+    a = self.torchnoise.noise2(self.torchview[0],self.torchview[0])
+    b = self.torchnoise.noise2(self.torchview[1],self.torchview[1])
+    focus = [focus[0]+0.5*a,focus[1]+0.5*b]
+    dist = distance(focus,point)
+    dist += self.torchnoise.noise2(self.torchview[0],self.torchview[1])
+    ratio = 2 * (dist / (radius)) # a igual distancia del radius el ratio debe valer 2  
+    sig = sigmoid(value=ratio,gain=1)
+    return sig
+
+  def update_torch(self):
+    direction = [random(),random()]
+    self.torchview = [t+0.2*d for t,d in zip(self.torchview,direction)]
 
   def get_coordinates(self,position):
     '''obtiene las coordenadas de la vista dada la posicion del objeto
@@ -166,6 +191,24 @@ class Map():
     self.rows = 0
     self.start_position = (0,0)
     self.bsp_data = ''
+    self.fov = rpas.FOVCalc()
+    # FOV settings parameters; middle restrictive
+    self.fov.NOT_VISIBLE_BLOCKS_VISION = True
+    self.fov.RESTRICTIVENESS = 1
+    self.fov.VISIBLE_ON_EQUAL = True
+
+  def is_unobstructed(self,x,y):
+    try:
+      if self.Char[int(y)][int(x)].block_sight == 1:
+        return False
+      else:
+        return True  
+    except IndexError:
+        return False
+
+  def calculate_fov(self,center_x,center_y,radius, is_unobstructed):
+    cells = self.fov.calc_visible_cells_from(center_x, center_y, radius, is_unobstructed)
+    return cells
 
   def put_rectangle(self,pos,size):
     for row in range(size[1]):
@@ -188,26 +231,11 @@ class Map():
       for col in range(x_end,x_ini+1):
         self.Char[y][col].copyChar(self.Back[y][col])
   
-  def lerp_color(self,color1,color2,value,start_value,end_value):
-    '''
-    linear interpolation between 2 color
-    '''
-    r = []
-    for c,d in zip(color1,color2):
-      r += [(d-c)*((end_value-start_value)*value+start_value)+c]
-    return r
   
   def PerlinTwoColor(self,width,height,color1,color2):
     '''
     genera un mapa en self.Back con ruido Perlin entre 2 colores
     '''
-    rgb1 = color1[0:3]
-    alpha1 = color1[3:]
-    ##RGBTOHSV DEVUELVE LISTA NO TUPLA, REVISAR O CAMBIAR A UNA FUNCION PROPIA DE RGB TO HSV!!!!!!
-    color1hsv =  list(colorsys.rgb_to_hsv(rgb1[0],rgb1[1],rgb1[2]))+alpha1
-    rgb2 = color2[0:3]
-    alpha2 = color2[3:]
-    color2hsv = list(colorsys.rgb_to_hsv(rgb2[0],rgb2[1],rgb2[2])) + alpha2
     noiseperiod = 256
     noisefreq = 8
     colornoise=SimplexNoise()
@@ -223,34 +251,32 @@ class Map():
           val = 2**octave
           noiseval += (2*octaves/val)*colornoise.noise2(val*x,val*y)
         noiseval = pow(noiseval/(2**octaves-1)+0.5,1.0)
-        cl = self.lerp_color(color1hsv,color2hsv,noiseval,0,1)
-        cl_rgb = colorsys.hsv_to_rgb(cl[0],cl[1],cl[2])
-        mybackcolor = list(cl_rgb)+cl[3:]        
+        mybackcolor = lerp_color(color1,color2,noiseval,0,1)
         myChar = Character()
         myChar.setChar(char=' ',forecolor = Colors.color_dict['black'],backcolor=mybackcolor,block=0,block_sight=0)
         self.Back[row].append(myChar)
 
 
   def PerlinMap(self,width,height):
-    self.noiseperiod = 256
-    self.noisefreq = 2
+    noiseperiod = 256
+    noisefreq = 2
     self.heightnoise=SimplexNoise()
-    self.heightnoise.randomize(period=self.noiseperiod)
+    self.heightnoise.randomize(period=noiseperiod)
     self.climatenoise=SimplexNoise()
-    self.climatenoise.randomize(period=self.noiseperiod)
-    self.octaves = 4
+    self.climatenoise.randomize(period=noiseperiod)
+    octaves = 4
     for row in range(height):
       self.Char.append([])
       for col in range(width):
-        x,y=self.noisefreq*col/self.noiseperiod,self.noisefreq*row/self.noiseperiod
+        x,y=noisefreq*col/noiseperiod,noisefreq*row/noiseperiod
         heightval = 0
         climateval = 0
-        for octave in range(self.octaves):
+        for octave in range(octaves):
           val = 2**octave
-          heightval += (2*self.octaves/val)*self.heightnoise.noise2(val*x,val*y)
-          climateval += (2*self.octaves/val)*self.climatenoise.noise2(val*x,val*y)
-        heightval = pow(heightval/(2**self.octaves-1)+0.5,4.0)
-        climateval = pow(climateval/(2**self.octaves-1)+0.5,4.0)
+          heightval += (2*octaves/val)*self.heightnoise.noise2(val*x,val*y)
+          climateval += (2*octaves/val)*self.climatenoise.noise2(val*x,val*y)
+        heightval = pow(heightval/(2**octaves-1)+0.5,3.0)
+        climateval = pow(climateval/(2**octaves-1)+0.5,3.0)
         mybackcolor = self.biome2(heightval,climateval)
         myforecolor = Colors.color_dict['red']
         self.Char[row].append(Character())
@@ -270,8 +296,8 @@ class Map():
   def biome2(self,heightval,climateval):
     e = heightval
     m = climateval
-    if (e < 0.05): biocolor = Colors.color_dict['terrain_deeps']
-    elif (e < 0.1): biocolor = Colors.color_dict['terrain_shallow']
+    if (e < 0.075): biocolor = Colors.color_dict['terrain_deeps']
+    elif (e < 0.15): biocolor = Colors.color_dict['terrain_shallow']
   
     elif (e > 0.7):
       if (m < 0.1): biocolor = Colors.color_dict['terrain_sand']
@@ -296,7 +322,8 @@ class Map():
       elif (m < 0.66): biocolor = Colors.color_dict['wheat']
       else: biocolor = Colors.color_dict['snow']
     
-    return [bio + e for bio in biocolor]
+    return [bio + (e*0.15) for bio in biocolor]
+    #return biocolor
 
   def BspTown(self,width,height):
     '''
@@ -318,6 +345,7 @@ class Map():
       self.Char.append([])
       for col in range(width):
         WallType = Character()
+        #mybackcolor = color1
         mybackcolor = self.Back[row][col].backcolor
         WallType.setChar(char=' ',forecolor=Colors.color_dict['black'],backcolor=mybackcolor,block=1,block_sight=1)
         self.Char[row].append(WallType)
